@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DCF Stock Valuation Calculator</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #e2e8f0;
+      --accent: #1d4ed8;
+      --accent-soft: #dbeafe;
+      --error-bg: #fef2f2;
+      --error-border: #fecaca;
+      --error-text: #b91c1c;
+      --shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 2.2rem;
+    }
+
+    .subtitle {
+      max-width: 860px;
+      color: var(--muted);
+      margin-bottom: 26px;
+      font-size: 1.02rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 1.35rem;
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 7px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      font-size: 1rem;
+      background: #fff;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-soft);
+    }
+
+    .note {
+      margin-top: 18px;
+      background: #f1f5f9;
+      border-radius: 14px;
+      padding: 14px;
+      color: #334155;
+      font-size: 0.95rem;
+    }
+
+    .note strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .metric {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      background: #fff;
+    }
+
+    .metric .label {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .metric .value {
+      font-size: 1.8rem;
+      font-weight: 800;
+    }
+
+    .metric .value.small {
+      font-size: 1.4rem;
+    }
+
+    .section-spacer {
+      margin-top: 22px;
+    }
+
+    .error {
+      padding: 14px 16px;
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      color: var(--error-text);
+      border-radius: 14px;
+      font-weight: 600;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .detail-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .detail-box .label {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
+    .detail-box .value {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .footer-tip {
+      margin-top: 18px;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-grid,
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>DCF Stock Valuation Calculator</h1>
+    <div class="subtitle">
+      Enter dividend and growth assumptions to estimate a stock’s intrinsic value using a multi-stage dividend discount model. This is a DCF-style equity valuation tool that works well for classroom demonstrations.
+    </div>
+
+    <div class="layout">
+      <div class="card">
+        <h2>Inputs</h2>
+
+        <div class="input-group">
+          <label for="dividend1">Expected Dividend Next Year (D₁)</label>
+          <input id="dividend1" type="number" step="0.01" value="2.00" />
+        </div>
+
+        <div class="input-group">
+          <label for="growthRate">High-Growth Rate (%)</label>
+          <input id="growthRate" type="number" step="0.1" value="5.0" />
+        </div>
+
+        <div class="input-group">
+          <label for="requiredReturn">Required Return / Discount Rate (%)</label>
+          <input id="requiredReturn" type="number" step="0.1" value="10.0" />
+        </div>
+
+        <div class="input-group">
+          <label for="years">High-Growth Period (Years)</label>
+          <input id="years" type="number" step="1" value="5" />
+        </div>
+
+        <div class="input-group">
+          <label for="terminalGrowth">Terminal Growth Rate (%)</label>
+          <input id="terminalGrowth" type="number" step="0.1" value="3.0" />
+        </div>
+
+        <div class="note">
+          <strong>Model used</strong>
+          Price = PV of projected dividends during the high-growth period + PV of terminal value.<br>
+          Terminal value at year N = D<sub>N+1</sub> / (r − g<sub>t</sub>)
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h2>Valuation Output</h2>
+          <div id="errorBox" class="error" style="display:none;"></div>
+
+          <div id="resultsBlock">
+            <div class="summary-grid">
+              <div class="metric">
+                <div class="label">Intrinsic Stock Price</div>
+                <div class="value" id="intrinsicValue">$0.00</div>
+              </div>
+              <div class="metric">
+                <div class="label">PV of Dividends</div>
+                <div class="value small" id="pvDividends">$0.00</div>
+              </div>
+              <div class="metric">
+                <div class="label">PV of Terminal Value</div>
+                <div class="value small" id="pvTerminalValue">$0.00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section-spacer" id="cashFlowSection">
+          <h2>Projected Cash Flows</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th>Projected Dividend</th>
+                  <th>Discount Factor</th>
+                  <th>Present Value</th>
+                </tr>
+              </thead>
+              <tbody id="cashFlowTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card section-spacer" id="terminalSection">
+          <h2>Terminal Value Details</h2>
+          <div class="details-grid">
+            <div class="detail-box">
+              <div class="label">Terminal Growth Rate</div>
+              <div class="value" id="terminalGrowthDisplay">0.00%</div>
+            </div>
+            <div class="detail-box">
+              <div class="label">Terminal Value at Year <span id="terminalYearLabel">5</span></div>
+              <div class="value" id="terminalValueAtN">$0.00</div>
+            </div>
+          </div>
+          <div class="footer-tip">
+            Tip: This tool is best suited for dividend-paying firms. For non-dividend-paying firms, you would typically use free cash flow instead.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const dividend1Input = document.getElementById('dividend1');
+    const growthRateInput = document.getElementById('growthRate');
+    const requiredReturnInput = document.getElementById('requiredReturn');
+    const yearsInput = document.getElementById('years');
+    const terminalGrowthInput = document.getElementById('terminalGrowth');
+
+    const intrinsicValueEl = document.getElementById('intrinsicValue');
+    const pvDividendsEl = document.getElementById('pvDividends');
+    const pvTerminalValueEl = document.getElementById('pvTerminalValue');
+    const terminalGrowthDisplayEl = document.getElementById('terminalGrowthDisplay');
+    const terminalValueAtNEl = document.getElementById('terminalValueAtN');
+    const terminalYearLabelEl = document.getElementById('terminalYearLabel');
+    const cashFlowTableBody = document.getElementById('cashFlowTableBody');
+    const errorBox = document.getElementById('errorBox');
+    const resultsBlock = document.getElementById('resultsBlock');
+    const cashFlowSection = document.getElementById('cashFlowSection');
+    const terminalSection = document.getElementById('terminalSection');
+
+    function formatCurrency(value) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 2
+      }).format(value);
+    }
+
+    function formatPercent(value) {
+      return Number(value).toFixed(2) + '%';
+    }
+
+    function showError(message) {
+      errorBox.style.display = 'block';
+      errorBox.textContent = message;
+      resultsBlock.style.display = 'none';
+      cashFlowSection.style.display = 'none';
+      terminalSection.style.display = 'none';
+    }
+
+    function hideError() {
+      errorBox.style.display = 'none';
+      resultsBlock.style.display = 'block';
+      cashFlowSection.style.display = 'block';
+      terminalSection.style.display = 'block';
+    }
+
+    function calculateValuation() {
+      const d1 = parseFloat(dividend1Input.value);
+      const g = parseFloat(growthRateInput.value) / 100;
+      const r = parseFloat(requiredReturnInput.value) / 100;
+      const n = parseInt(yearsInput.value, 10);
+      const gt = parseFloat(terminalGrowthInput.value) / 100;
+
+      if ([d1, g, r, n, gt].some(value => Number.isNaN(value))) {
+        showError('Please enter valid numeric values.');
+        return;
+      }
+
+      if (d1 < 0) {
+        showError('Dividend must be zero or greater.');
+        return;
+      }
+
+      if (n < 1 || !Number.isInteger(n)) {
+        showError('Projection years must be a whole number of at least 1.');
+        return;
+      }
+
+      if (r <= gt) {
+        showError('Required return must be greater than terminal growth rate.');
+        return;
+      }
+
+      hideError();
+
+      let pvDividends = 0;
+      let rowsHtml = '';
+
+      for (let t = 1; t <= n; t++) {
+        const dividend = d1 * Math.pow(1 + g, t - 1);
+        const discountFactor = Math.pow(1 + r, t);
+        const pv = dividend / discountFactor;
+        pvDividends += pv;
+
+        rowsHtml += `
+          <tr>
+            <td>${t}</td>
+            <td>${formatCurrency(dividend)}</td>
+            <td>${discountFactor.toFixed(4)}</td>
+            <td>${formatCurrency(pv)}</td>
+          </tr>
+        `;
+      }
+
+      const dividendNextAfterHorizon = d1 * Math.pow(1 + g, n - 1) * (1 + gt);
+      const terminalValueAtN = dividendNextAfterHorizon / (r - gt);
+      const pvTerminalValue = terminalValueAtN / Math.pow(1 + r, n);
+      const intrinsicValue = pvDividends + pvTerminalValue;
+
+      intrinsicValueEl.textContent = formatCurrency(intrinsicValue);
+      pvDividendsEl.textContent = formatCurrency(pvDividends);
+      pvTerminalValueEl.textContent = formatCurrency(pvTerminalValue);
+      terminalGrowthDisplayEl.textContent = formatPercent(terminalGrowthInput.value);
+      terminalValueAtNEl.textContent = formatCurrency(terminalValueAtN);
+      terminalYearLabelEl.textContent = n;
+      cashFlowTableBody.innerHTML = rowsHtml;
+    }
+
+    [dividend1Input, growthRateInput, requiredReturnInput, yearsInput, terminalGrowthInput].forEach(input => {
+      input.addEventListener('input', calculateValuation);
+    });
+
+    calculateValuation();
+  </script>
+</body>
+</html>
